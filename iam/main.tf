@@ -48,7 +48,7 @@ resource "aws_iam_role" "age_ecs_task_execution_role" {
   }
 }
 
-# Codebuild role
+# Backend Codebuild role
 resource "aws_iam_role" "age_codebuild_role" {
   name = "${var.project}-${var.environment}-codebuild-role"
   assume_role_policy = jsonencode(
@@ -489,4 +489,229 @@ resource "aws_iam_policy" "age_codepipeline_policy" {
 resource "aws_iam_role_policy_attachment" "age_codepipeline_policy_attachment" {
   role       = aws_iam_role.age_codepipeline_role.name
   policy_arn = aws_iam_policy.age_codepipeline_policy.arn
+}
+
+
+resource "aws_iam_role" "frontend_codepipeline_role" {
+  name = "${var.project}-${var.environment}-frontend-pipeline-role"
+
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "codepipeline.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy" "frontend_codepipeline_role_policy" {
+  name = "${var.project}-${var.environment}-frontend-pipeline-role-policy"
+  role = aws_iam_role.frontend_codepipeline_role.id
+
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect":"Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:GetObjectVersion",
+        "s3:GetBucketVersioning",
+        "s3:PutObjectAcl",
+        "s3:PutObject"
+      ],
+      "Resource":  "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "codestar-connections:UseConnection"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "codebuild:BatchGetBuilds",
+        "codebuild:StartBuild"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_role" "lambda_role" {
+  name = "${var.project}-${var.environment}-lambda-execution-role"
+
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": ["lambda.amazonaws.com", "apigateway.amazonaws.com" ]
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+  EOF
+
+  managed_policy_arns = [ 
+              "arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess",
+              "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+
+  tags = {
+    Name = "${var.project}-${var.environment}-lambda-execution-role"
+    Environment = var.environment
+    CreatedBy = var.createdBy
+  }
+}
+
+
+resource "aws_iam_role_policy" "lambda_role_policy" {
+  name = "${var.project}-${var.environment}-lambda-execution-role-policy"
+  role = aws_iam_role.lambda_role.id
+
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ec2:DescribeNetworkInterfaces",
+        "ec2:CreateNetworkInterface",
+        "ec2:DeleteNetworkInterface",
+        "ec2:DescribeInstances",
+        "ec2:AttachNetworkInterface",
+        "lambda:InvokeFunction"
+      ],
+      "Resource": "*"
+    },
+     {
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:DescribeContributorInsights",
+        "dynamodb:RestoreTableToPointInTime",
+        "dynamodb:UpdateGlobalTable",
+        "dynamodb:DeleteTable",
+        "dynamodb:UpdateTableReplicaAutoScaling",
+        "dynamodb:DescribeTable",
+        "dynamodb:PartiQLInsert",
+        "dynamodb:GetItem",
+        "dynamodb:DescribeContinuousBackups",
+        "dynamodb:DescribeExport",
+        "dynamodb:EnableKinesisStreamingDestination",
+        "dynamodb:BatchGetItem",
+        "dynamodb:DisableKinesisStreamingDestination",
+        "dynamodb:UpdateTimeToLive",
+        "dynamodb:BatchWriteItem",
+        "dynamodb:PutItem",
+        "dynamodb:PartiQLUpdate",
+        "dynamodb:Scan",
+        "dynamodb:StartAwsBackupJob",
+        "dynamodb:UpdateItem",
+        "dynamodb:UpdateGlobalTableSettings",
+        "dynamodb:CreateTable",
+        "dynamodb:RestoreTableFromAwsBackup",
+        "dynamodb:GetShardIterator",
+        "dynamodb:DescribeReservedCapacity",
+        "dynamodb:ExportTableToPointInTime",
+        "dynamodb:DescribeBackup",
+        "dynamodb:UpdateTable",
+        "dynamodb:GetRecords",
+        "dynamodb:DescribeTableReplicaAutoScaling",
+        "dynamodb:ListTables",
+        "dynamodb:DeleteItem",
+        "dynamodb:PurchaseReservedCapacityOfferings",
+        "dynamodb:CreateTableReplica",
+        "dynamodb:ListTagsOfResource",
+        "dynamodb:UpdateContributorInsights",
+        "dynamodb:CreateBackup",
+        "dynamodb:UpdateContinuousBackups",
+        "dynamodb:DescribeReservedCapacityOfferings",
+        "dynamodb:PartiQLSelect",
+        "dynamodb:CreateGlobalTable",
+        "dynamodb:DescribeKinesisStreamingDestination",
+        "dynamodb:DescribeLimits",
+        "dynamodb:ListExports",
+        "dynamodb:ConditionCheckItem",
+        "dynamodb:ListBackups",
+        "dynamodb:Query",
+        "dynamodb:DescribeStream",
+        "dynamodb:DeleteTableReplica",
+        "dynamodb:DescribeTimeToLive",
+        "dynamodb:ListStreams",
+        "dynamodb:ListContributorInsights",
+        "dynamodb:DescribeGlobalTableSettings",
+        "dynamodb:ListGlobalTables",
+        "dynamodb:DescribeGlobalTable",
+        "dynamodb:RestoreTableFromBackup",
+        "dynamodb:DeleteBackup",
+        "dynamodb:PartiQLDelete"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+EOF
+}
+
+
+
+resource "aws_iam_role" "api_gw_role" {
+  name = "${var.project}-${var.environment}-lambda-api-gw-role"
+
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "apigateway.amazonaws.com" 
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+  EOF
+
+
+  tags = {
+    Name = "${var.project}-${var.environment}-lambda-api-gw-role"
+    Environment = var.environment
+    CreatedBy = var.createdBy
+  }
+}
+
+resource "aws_iam_role_policy" "api_gw_role_policy" {
+  name = "${var.project}-${var.environment}-api-gw-role-policy"
+  role = aws_iam_role.api_gw_role.id
+
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action":"lambda:InvokeFunction",
+      "Resource": "arn:aws:lambda:*:*:*:*"
+    }
+  ]
+}
+EOF
 }

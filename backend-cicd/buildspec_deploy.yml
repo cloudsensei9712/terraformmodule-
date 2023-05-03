@@ -1,0 +1,5 @@
+version: 0.2
+phases:
+  post_build:
+    commands:
+      - aws lambda update-function-code \--function-name $FUNCTION_NAME  \--s3-bucket $S3_BUCKET --s3-key build.zip

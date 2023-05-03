@@ -1,0 +1,11 @@
+schema {
+    query: Query
+}
+
+type HelloWorldResponse{
+    response: String
+}
+
+type Query {
+    helloWorldLambda(greeting: String!): HelloWorldResponse
+}

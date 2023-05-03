@@ -1,0 +1,26 @@
+version: 0.2
+
+phases:
+  install:
+   runtime-versions:
+       nodejs: 14
+    commands:
+      - echo "installing serverless framework"
+      - npm install -g serverless
+    
+      # - npm run lint
+  pre_build:
+    commands:
+      - echo install pre build commands
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo Installing NPM Packages
+      - npm install
+  post_build:
+    commands:
+      - echo Build completed on `date`
+
+artifacts:
+  files: 
+    - '**/*'

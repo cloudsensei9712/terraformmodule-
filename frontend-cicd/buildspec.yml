@@ -1,0 +1,26 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 14
+    
+      # - npm run lint
+  pre_build:
+    commands:
+      - npm set "//registry.npmjs.org/:_authToken" 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
+      - echo Installing source NPM dependencies... 
+      - yarn --cwd src/front-end install
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo Compiling the Node.js code
+      - yarn --cwd src/front-end build-dev
+  post_build:
+    commands:
+      - echo Build completed on `date`
+
+artifacts:
+  files: 
+    - '*'
+  base-directory: src/front-end/dist

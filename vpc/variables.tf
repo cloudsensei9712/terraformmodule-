@@ -43,7 +43,8 @@ variable "vpcCIDR" {
 }
 
 variable "publicSubnetCount" {
-        type = string
+        type = number
+        default = 1
 }
 
 variable "publicSubnetsCIDR" {
@@ -52,7 +53,8 @@ variable "publicSubnetsCIDR" {
 }
 
 variable "privateSubnetCount" {
-        type = string
+        type = number
+        default = 1
 }
 
 variable "privateSubnetsCIDR" {
@@ -70,5 +72,15 @@ variable "mapPublicIP" {
 }
 
 variable "enablePrivateInternetAccess" {
+  default = false
+}
+
+variable "enableDynamodbEndpoint" {
+  default = false
+}
+variable "enableSnsEndpoint" {
+  default = false
+}
+variable "enableSesEndpoint" {
   default = false
 }

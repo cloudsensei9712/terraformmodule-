@@ -1,5 +1,5 @@
 # Create an alb security group which allows incoming http and https traffic
-resource "aws_security_group" "age_alb_sg" {
+resource "aws_security_group" "alb_sg" {
   name        = "${var.project}-${var.environment}-alb-sg"
   description = "Allow Public traffic for ALB."
   vpc_id      = var.vpcId
@@ -32,15 +32,14 @@ resource "aws_security_group" "age_alb_sg" {
   }
 }
 
-
 # Create an alb security group which allows incoming http and https traffic
-resource "aws_security_group" "age_ecs_sg" {
+resource "aws_security_group" "ecs_sg" {
   name        = "${var.project}-${var.environment}-ecs-sg"
   description = "Allow  traffic for ALB."
   vpc_id      = var.vpcId
 
   ingress {
-    security_groups = [ aws_security_group.age_alb_sg.id ]
+    security_groups = [ aws_security_group.alb_sg.id ]
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
@@ -48,7 +47,7 @@ resource "aws_security_group" "age_ecs_sg" {
   }
 
   ingress {
-    security_groups = [ aws_security_group.age_alb_sg.id ]
+    security_groups = [ aws_security_group.alb_sg.id ]
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
@@ -67,13 +66,13 @@ resource "aws_security_group" "age_ecs_sg" {
   }
 }
 
-resource "aws_security_group" "age_db_sg" {
+resource "aws_security_group" "db_sg" {
   vpc_id       = var.vpcId
   name         = "${var.project}-${var.environment}-rds-sg"
   description  = "Security for the RDS DB Instance"
 	
   ingress {
-    security_groups = [ aws_security_group.age_ecs_sg.id ]
+    security_groups = [ aws_security_group.ecs_sg.id ]
     from_port   = 3306
     to_port     = 3306
     protocol    = "tcp"

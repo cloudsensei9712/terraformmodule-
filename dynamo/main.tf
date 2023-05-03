@@ -7,7 +7,7 @@ resource "aws_dynamodb_table" "dynamodb_table" {
   range_key      = var.table_range_key
 
   point_in_time_recovery {
-    enabled = var.enable_pitr
+    enabled = true
   }
 
   server_side_encryption {
@@ -21,25 +21,113 @@ resource "aws_dynamodb_table" "dynamodb_table" {
     name = var.table_range_key
     type = "S"
   }
-  dynamic "attribute" {
-    for_each = var.table_additional_attributes
-    content {
-      name = attribute.key
-      type = attribute.value
-    }
+  attribute {
+    name = "FirstName"
+    type = "S"
+  }
+  attribute {
+    name = "LastName"
+    type = "S"
+  }
+  # attribute {
+  #   name = "Email"
+  #   type = "S"
+  # }
+  # attribute {
+  #   name = "Pronouns"
+  #   type = "B"
+  # }
+  # attribute {
+  #   name = "CustomPronouns"
+  #   type = "S"
+  # }
+  # attribute {
+  #   name = "PreferredName"
+  #   type = "S"
+  # }
+  # attribute {
+  #   name = "RegistrationEmail"
+  #   type = "S"
+  # }
+  # attribute {
+  #   name = "Password"
+  #   type = "S"
+  # }
+  # attribute {
+  #   name = "ProfilePhoto"
+  #   type = "S"
+  # }
+  # attribute {
+  #   name = "HomeBuildCenter"
+  #   type = "S"
+  # }
+  # attribute {
+  #   name = "BuildCentersofInterest"
+  #   type = "S"
+  # }
+  # attribute {
+  #   name = "SlalomGlobalTeam"
+  #   type = "S"
+  # }
+  # attribute {
+  #   name = "JobTitle"
+  #   type = "S"
+  # }
+  # attribute {
+  #   name = "Capability"
+  #   type = "B"
+  # }
+  # attribute {
+  #   name = "FormerSlalomEmail"
+  #   type = "S"
+  # }
+  #  attribute {
+  #   name = "CurrentCompany"
+  #   type = "S"
+  # }
+  # attribute {
+  #   name = "CurrentPosition"
+  #   type = "S"
+  # }
+  # attribute {
+  #   name = "LinkedInLink"
+  #   type = "S"
+  # }
+  # attribute {
+  #   name = "Biography"
+  #   type = "S"
+  # }
+  # attribute {
+  #   name = "NotificationEnrollment"
+  #   type = "B"
+  # }
+  # attribute {
+  #   name = "ExposeEmailtoOtherAlums"
+  #   type = "B"
+  # }
+  # attribute {
+  #   name = "TermsAndConditions"
+  #   type = "B"
+  # }
+
+  # ttl {
+  #   attribute_name = "TimeToExist"
+  #   enabled        = false
+  # }
+
+   global_secondary_index {
+    name               = "Index1"
+    hash_key           = "FirstName"
+    range_key          =  "LastName"
+  
+    projection_type    = "INCLUDE"
+    non_key_attributes = ["FirstName", "LastName", "Email","Pronouns" ]
   }
 
-  dynamic "global_secondary_index" {
-    for_each = var.table_gsi
-    content {
-      name      = global_secondary_index.key
-      hash_key  = global_secondary_index.value.hash_key
-      range_key = global_secondary_index.value.range_key
-
-      projection_type    = global_secondary_index.value.projection_type
-      non_key_attributes = global_secondary_index.value.non_key_attributes
-    }
+   tags = {
+     Name = "${var.project}-${var.environment}-${var.table_name}"
+    Project = var.project
+    Environment = var.environment
+    CreatedBy = var.createdBy
   }
-
-  tags = var.tags
 }

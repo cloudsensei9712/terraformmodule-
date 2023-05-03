@@ -13,3 +13,13 @@ output "codebuildRoleArn" {
 output "codepipelineRoleArn" {
   value = aws_iam_role.age_codepipeline_role.arn
 }
+
+output "frontendCodepipelineRoleArn" {
+  value = aws_iam_role.frontend_codepipeline_role.arn
+}
+
+output "lambdaExecutionRole" {
+  value = aws_iam_role.lambda_role.arn
+}
+
+

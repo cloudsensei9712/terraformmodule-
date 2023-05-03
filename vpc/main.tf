@@ -77,15 +77,15 @@ resource "aws_route_table_association" "vpc_public_associations" {
 
 #Create EIP required for Private Internet Access
 resource "aws_eip" "vpc_NGW_EIP" {
-  count = var.enablePrivateInternetAccess ? 1 : 0
+  count = var.enablePrivateInternetAccess ? var.privateSubnetCount : 0
   vpc              = true
 }
 
 # Create the NAT Gateway to enable internet access for private Subnets
 resource "aws_nat_gateway" "vpc_NGW" {
-  count = var.enablePrivateInternetAccess ? 1 : 0
+  count = var.enablePrivateInternetAccess ? var.privateSubnetCount : 0
   allocation_id = aws_eip.vpc_NGW_EIP[count.index].id
-  subnet_id  = aws_subnet.public_subnets[0].id
+  subnet_id  = aws_subnet.public_subnets[count.index].id
   tags = {
     Name = "${var.project}-${var.environment}-vpc-nat-gateway"
     Environment = var.environment
@@ -109,7 +109,7 @@ resource "aws_route" "vpc_private_internet_access" {
   count = var.enablePrivateInternetAccess ? 1 : 0
   route_table_id        = aws_route_table.vpc_private_rt[0].id
   destination_cidr_block = var.destinationCIDR
-  nat_gateway_id             = aws_nat_gateway.vpc_NGW[0].id
+  nat_gateway_id             = aws_nat_gateway.vpc_NGW[count.index].id
 } 
 
 # Associate the Route Table with the Public Subnets
@@ -118,3 +118,106 @@ resource "aws_route_table_association" "vpc_private_associations" {
     subnet_id      = aws_subnet.private_subnets[count.index].id
     route_table_id = aws_route_table.vpc_private_rt[0].id
 }
+
+
+
+data "aws_vpc_endpoint_service" "dynamodb" {
+  count = "${var.enableDynamodbEndpoint ? 1 : 0}"
+  service = "dynamodb"
+}
+
+data "aws_vpc_endpoint_service" "sns" {
+  count = "${var.enableSnsEndpoint ? 1 : 0}"
+  service = "sns"
+}
+
+data "aws_vpc_endpoint_service" "ses" {
+  count = "${var.enableSesEndpoint ? 1 : 0}"
+  service = "email-smtp"
+}
+############################
+# VPC Endpoint for DynamoDB
+############################
+resource "aws_vpc_endpoint" "dynamodb" {
+  count = "${var.enableDynamodbEndpoint ? 1 : 0}"
+  vpc_id       = aws_vpc.age_vpc.id
+  service_name = "${data.aws_vpc_endpoint_service.dynamodb[count.index].service_name}"
+  tags = {
+      Name = "${var.project}-${var.environment}-dynamodb-endpoint"
+      Environment = var.environment
+      CreatedBy = var.createdBy
+    }
+}
+
+resource "aws_vpc_endpoint_route_table_association" "private_dynamodb" {
+  count = "${var.enableDynamodbEndpoint && var.privateSubnetCount > 0 && var.enablePrivateInternetAccess ? 1 : 0}"
+
+  vpc_endpoint_id = "${aws_vpc_endpoint.dynamodb[count.index].id}"
+  route_table_id  = "${aws_route_table.vpc_private_rt[count.index].id}"
+}
+
+resource "aws_vpc_endpoint_route_table_association" "public_dynamodb" {
+  count = "${var.enableDynamodbEndpoint && var.publicSubnetCount > 0 ? 1 : 0}"
+
+  vpc_endpoint_id = "${aws_vpc_endpoint.dynamodb[count.index].id}"
+  route_table_id  = "${aws_route_table.vpc_public_rt.id}"
+}
+############################
+# VPC Endpoint for SNS
+############################
+
+resource "aws_vpc_endpoint" "sns" {
+  count = "${var.enableSnsEndpoint ? 1 : 0}"
+  vpc_id       = aws_vpc.age_vpc.id
+  vpc_endpoint_type = "Interface"
+  service_name = "${data.aws_vpc_endpoint_service.sns[count.index].service_name}"
+  tags = {
+      Name = "${var.project}-${var.environment}-sns-endpoint"
+      Environment = var.environment
+      CreatedBy = var.createdBy
+    }
+}
+
+# resource "aws_vpc_endpoint_route_table_association" "private_sns" {
+#   count = "${var.enableSnsEndpoint && var.privateSubnetCount > 0 && var.enablePrivateInternetAccess ? 1 : 0}"
+
+#   vpc_endpoint_id = "${aws_vpc_endpoint.sns[count.index].id}"
+#   route_table_id  = "${aws_route_table.vpc_private_rt[count.index].id}"
+# }
+
+# resource "aws_vpc_endpoint_route_table_association" "public_sns" {
+#   count = "${var.enableSnsEndpoint && var.publicSubnetCount > 0 ? 1 : 0}"
+
+#   vpc_endpoint_id = "${aws_vpc_endpoint.sns[count.index].id}"
+#   route_table_id  = "${aws_route_table.vpc_public_rt.id}"
+# }
+
+############################
+# VPC Endpoint for SES
+############################
+
+resource "aws_vpc_endpoint" "ses" {
+  count = "${var.enableSesEndpoint ? 1 : 0}"
+  vpc_id       = aws_vpc.age_vpc.id
+  vpc_endpoint_type = "Interface"
+  service_name = "${data.aws_vpc_endpoint_service.ses[count.index].service_name}"
+  tags = {
+      Name = "${var.project}-${var.environment}-ses-endpoint"
+      Environment = var.environment
+      CreatedBy = var.createdBy
+    }
+}
+
+# resource "aws_vpc_endpoint_route_table_association" "private_ses" {
+#   count = "${var.enableSesEndpoint && var.privateSubnetCount > 0 && var.enablePrivateInternetAccess ? 1 : 0}"
+
+#   vpc_endpoint_id = "${aws_vpc_endpoint.ses[count.index].id}"
+#   route_table_id  = "${aws_route_table.vpc_private_rt[count.index].id}"
+# }
+
+# resource "aws_vpc_endpoint_route_table_association" "public_ses" {
+#   count = "${var.enableSesEndpoint && var.publicSubnetCount > 0 ? 1 : 0}"
+
+#   vpc_endpoint_id = "${aws_vpc_endpoint.ses[count.index].id}"
+#   route_table_id  = "${aws_route_table.vpc_public_rt.id}"
+# }
